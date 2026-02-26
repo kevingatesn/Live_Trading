@@ -121,6 +121,7 @@ class LiveDecisionEngine:
                     
         # À la fin de l'exécution, on met à jour le visuel silencieusement
         self.generate_live_dashboard(market_data)
+        self.send_telegram_report()
         logging.info("--- FIN DE LA ROUTINE QUOTIDIENNE ---")
 
     def generate_live_dashboard(self, market_data):
@@ -168,7 +169,42 @@ class LiveDecisionEngine:
         plt.tight_layout()
         plt.savefig('dashboard_live.png', facecolor='black', dpi=150)
         plt.close(fig) # Libère la mémoire, le bot ne plante pas !
+    
+    
+    def send_telegram_report(self):
+        """Envoie le dashboard et un résumé texte sur Telegram."""
+        import os
+        import requests
+        
+        # Récupération des clés secrètes depuis l'environnement (GitHub Secrets)
+        bot_token = os.environ.get('TELEGRAM_TOKEN')
+        chat_id = os.environ.get('TELEGRAM_CHAT_ID')
+        
+        if not bot_token or not chat_id:
+            logging.warning("Identifiants Telegram manquants. Envoi ignoré.")
+            return
 
+        image_path = 'dashboard_live.png'
+        if not os.path.exists(image_path):
+            logging.error("L'image du dashboard n'existe pas.")
+            return
+
+        url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
+        
+        cash = self.portfolio.get_cash()
+        positions_count = self.portfolio.get_active_positions_count()
+        message = f"📊 Rapport Quotidien Terminé\n💰 Cash: {cash:.2f}$\n📦 Positions Actives: {positions_count}/{self.max_positions}"
+
+        try:
+            with open(image_path, 'rb') as photo:
+                payload = {'chat_id': chat_id, 'caption': message}
+                response = requests.post(url, data=payload, files={'photo': photo})
+                if response.status_code == 200:
+                    logging.info("Rapport Telegram envoyé avec succès.")
+                else:
+                    logging.error(f"Échec de l'envoi Telegram : {response.text}")
+        except Exception as e:
+            logging.error(f"Erreur lors de l'envoi Telegram : {e}")
 # ==========================
 # 3. LANCEMENT MANUEL POUR TEST
 # ==========================
