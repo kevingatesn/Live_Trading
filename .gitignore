@@ -1,0 +1,18 @@
+# Environnements virtuels (très important de ne pas les envoyer)
+env/
+venv/
+.env/
+env
+
+# Fichiers cache de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Fichiers de log (générés localement)
+bot_execution.log
+
+requirements.txt
+
+# Images générées (optionnel, mais ça évite de polluer l'historique git)
+dashboard_live.png
